@@ -1,21 +1,14 @@
-# Stage 1: Build Maven Application
-FROM maven:3.8.4-openjdk-11-slim AS build
-WORKDIR /app
-COPY pom.xml .
-RUN mvn -B dependency:go-offline
+# Use a Tomcat base image
+FROM tomcat:9.0-jdk11-openjdk-slim
 
-COPY src ./src
-RUN mvn -B clean package -DskipTests
+# Remove existing ROOT webapps to deploy our own
+RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-# Stage 2: Create Docker Image with Java Application
-FROM adoptopenjdk:11-jre-hotspot
-WORKDIR /app
+# Copy the .war file into the webapps directory of Tomcat
+COPY target/webapp.war /usr/local/tomcat/webapps/ROOT.war
 
-# Copy the compiled JAR file from the previous stage
-COPY --from=build /app/target/webapp.war /app/webapp.war
-
-# Expose the port that your application runs on
+# Expose the port that Tomcat runs on
 EXPOSE 7777
 
-# Command to run your application
-CMD ["java", "-jar", "webapp.war"]
+# Start Tomcat server
+CMD ["catalina.sh", "run"]
